@@ -1,0 +1,40 @@
+﻿<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thailand GeoJSON — Leaflet Viewer</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>html,body,#map{height:100%;margin:0;padding:0}#panel{position:absolute;left:10px;top:10px;z-index:1000;background:rgba(255,255,255,0.95);padding:6px;border-radius:4px;font-family:Arial}</style>
+</head>
+<body>
+<div id="panel">Search: <input id="q" placeholder="text"/></div>
+<div id="map"></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  var map = L.map('map').setView([13,100],6);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap contributors'}).addTo(map);
+  var geoLayer;
+  fetch('Thailand.geojson').then(r=>r.json()).then(data=>{
+    geoLayer = L.geoJSON(data,{
+      style: function(){return {color:'#08306b',fillColor:'#1f78b4',weight:1,fillOpacity:0.6};},
+      onEachFeature: function(feature,layer){
+        var props = feature.properties||{};
+        var html=''; for(var k in props){ html+='<b>'+k+'</b>: '+props[k]+'<br/>'; }
+        layer.bindPopup(html);
+      }
+    }).addTo(map);
+    map.fitBounds(geoLayer.getBounds());
+  }).catch(e=>{ alert('Failed to load Example Thailand.geojson — run a local server and open via http.'); console.error(e); });
+
+  // simple search
+  document.getElementById('q').addEventListener('input', function(){
+    var q=this.value.toLowerCase();
+    geoLayer && geoLayer.eachLayer(function(l){
+      var s=false; for(var k in l.feature.properties){ var v=l.feature.properties[k]; if (v && String(v).toLowerCase().indexOf(q)!==-1) { s=true; break; } }
+      l.setStyle ? l.setStyle(s ? {fillColor:'#ff7f00',color:'#b34a00',weight:2,fillOpacity:0.7} : {fillOpacity:0.0001,opacity:0}) : null;
+    });
+  });
+</script>
+</body>
+</html>
